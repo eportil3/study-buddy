@@ -2,6 +2,8 @@ var bcrypt = require('bcrypt-nodejs');
 var crypto = require('crypto');
 var mongoose = require('mongoose');
 
+var ObjectId = mongoose.Schema.Types.ObjectId;
+
 var userSchema = new mongoose.Schema({
   email: { type: String, unique: true },
   password: String,
@@ -23,7 +25,9 @@ var userSchema = new mongoose.Schema({
     location: { type: String, default: '' },
     website: { type: String, default: '' },
     picture: { type: String, default: '' }
-  }
+  },
+
+  classes: [{ classId: ObjectId, online: {type: Boolean, default: false} }]
 }, { timestamps: true });
 
 /**

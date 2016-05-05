@@ -33,6 +33,7 @@ var homeController = require('./controllers/home');
 var userController = require('./controllers/user');
 var apiController = require('./controllers/api');
 var contactController = require('./controllers/contact');
+var classController = require('./controllers/class');
 
 /**
  * API keys and Passport configuration.
@@ -43,6 +44,8 @@ var passportConfig = require('./config/passport');
  * Create Express server.
  */
 var app = express();
+var server = require('http').Server(app);
+var io = require('socket.io')(server);
 
 /**
  * Connect to MongoDB.
@@ -124,6 +127,11 @@ app.post('/account/profile', passportConfig.isAuthenticated, userController.post
 app.post('/account/password', passportConfig.isAuthenticated, userController.postUpdatePassword);
 app.post('/account/delete', passportConfig.isAuthenticated, userController.postDeleteAccount);
 app.get('/account/unlink/:provider', passportConfig.isAuthenticated, userController.getOauthUnlink);
+
+app.post('/subscribe', classController.postSubscribeToClass);
+app.post('/unsubscribe/:subdoc_id', classController.postUnsubscribeFromClass);
+app.post('/online/:subdoc_id', classController.postGoOnline);
+app.post('/offline/:subdoc_id', classController.postGoOffline);
 
 /**
  * API examples routes.
@@ -222,8 +230,18 @@ app.use(errorHandler());
 /**
  * Start Express server.
  */
-app.listen(app.get('port'), function() {
+server.listen(app.get('port'), function() {
   console.log('Express server listening on port %d in %s mode', app.get('port'), app.get('env'));
+});
+
+io.on('connection', function(socket) {
+  socket.emit('greet', { hello: 'Hey there browser!' });
+  socket.on('respond', function(data) {
+    console.log(data);
+  });
+  socket.on('disconnect', function() {
+    console.log('Socket disconnected');
+  });
 });
 
 module.exports = app;

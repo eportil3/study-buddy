@@ -3,55 +3,117 @@ extends layout
 block content
   h1 Welcome to Study Buddy
   hr
-  p.lead  My Classes 
+  p.lead
+    | My Classes  
+    span#gear.btn-group(data-toggle='buttons')
+      button.btn.btn-default(type='button', aria-label='Left Align', data-toggle='collapse')
+        span.glyphicon.glyphicon-cog(aria-hidden='true', data-toggle='tooltip', title='Edit Classes')
+    span#plus(style='display:none;')
+      button.btn.btn-default(onclick='appendText()', type='button', aria-label='Left Align')
+        span.glyphicon.glyphicon-plus(aria-hidden='true', data-toggle='tooltip', title='Add Classes')
   .container-fluid
-    .row
-      .col-xs-10
-        | ORF 307: Optimization
-        #demo.collapse
-          button.btn.btn-default(type='button', data-toggle='collapse', data-target='#available') Show Available People
-          #available.collapse
-            | List of available people in table form
-      .col-xs-1
-        .btn-group(data-toggle='button')
-          span(data-toggle='tooltip', title='Go Online for this Class')
-            button.btn.btn-default(type='button', aria-label='Left Align', data-toggle='collapse', data-target='#demo')
-              span.glyphicon.glyphicon-book(aria-hidden='true', data-toggle='tooltip', title='Go Online for this Class')
-      .col-xs-1
-        .btn-group(data-toggle='button')
-          span(href='#', data-toggle='tooltip', title='Turn on Notifications for this class')
+    - var counter = 0;
+    each temp in classes
+      div.row(id='#{temp._id}')
+        .col-xs-10
+          form#unsubscribeClassForm(method='post', action='/unsubscribe/#{temp._id}')
+            input(type='hidden', name='_csrf', value=_csrf)
+            span.x(style='display:none;')    
+              button.btn.btn-default(type='submit')
+                span.glyphicon.glyphicon-remove(data-toggle='tooltip', title='Remove this class')
+            | #{temp.name}
+          if temp.online
+            div.collapse.in(id='demo#{counter}')
+              - var counter2 = 0;
+              each person in temp.onlineSubscribers
+                button.btn.btn-default(type='button', data-toggle='collapse', data-target='#available#{counter}') Show Available People
+                div.collapse.in(id='available#{counter}')
+                  table.table.table-hover
+                    thead
+                      tr
+                        th Profile Pic
+                        th Name
+                        th Email
+                        th Connect
+                    tbody
+                      tr
+                        td
+                          if person.profile.picture
+                            img.img-rounded.img-responsive(src='#{person.profile.picture}', style='max-width:50%;')
+                          else
+                            img.img-rounded.img-responsive(src='https://gravatar.com/avatar/?s=200&d=retro', style='max-width:50%;')
+                        td #{person.profile.name}
+                        td #{person.email}
+                        td
+                          button(type='button', data-toggle='modal', data-target='#myModal#{counter2}') Connect
+                          // Modal
+                          div.modal.fade(id='myModal#{counter2}', role='dialog')
+                            .modal-dialog
+                              // Modal content
+                              .modal-content
+                                .modal-header
+                                  button.close(type='button', data-dismiss='modal') ×
+                                  h4.modal-title Modal Header
+                                .modal-body
+                                  p Some text in the modal.
+                                .modal-footer
+                                  button.btn.btn-default(type='button', data-dismiss='modal') Close
+          else
+            div.collapse(id='demo#{counter}')
+              - var counter2 = 0;
+              each person in temp.onlineSubscribers
+                button.btn.btn-default(type='button', data-toggle='collapse', data-target='#available#{counter}') Show Available People
+                div.collapse(id='available#{counter}')
+                  table.table.table-hover
+                    thead
+                      tr
+                        th Id
+                        th Email
+                        th Connect
+                    tbody
+                      tr
+                        td #{person._id}
+                        td (need to fill this)
+                        td
+                          button(type='button', data-toggle='modal', data-target='#myModal#{counter2}') Connect
+                          // Modal
+                          div.modal.fade(id='myModal#{counter2}', role='dialog')
+                            .modal-dialog
+                              // Modal content
+                              .modal-content
+                                .modal-header
+                                  button.close(type='button', data-dismiss='modal') ×
+                                  h4.modal-title Modal Header
+                                .modal-body
+                                  p Some text in the modal.
+                                .modal-footer
+                                  button.btn.btn-default(type='button', data-dismiss='modal') Close
+        .col-xs-1
+          - if (temp.online) {
+            form#goOffline(method='post', action='/offline/#{temp._id}')
+              input(type='hidden', name='_csrf', value=_csrf)            
+              button.btn.btn-default(type='submit', aria-label='Left Align', data-toggle='collapse', data-target='#demo#{counter}')
+                span.glyphicon.glyphicon-book(aria-hidden='true', data-toggle='tooltip', title='Go Offline for this Class')
+          - } else {
+            form#goOnline(method='post', action='/online/#{temp._id}')
+              input(type='hidden', name='_csrf', value=_csrf)
+              button.btn.btn-default(type='submit', aria-label='Left Align', data-toggle='collapse', data-target='#demo#{counter}')
+                span.glyphicon.glyphicon-book(aria-hidden='true', data-toggle='tooltip', title='Go Online for this Class')
+          - }
+        .col-xs-1
+          .btn-group(data-toggle='buttons')
             button.btn.btn-default(type='button', aria-label='Left Align')
-              span.glyphicon.glyphicon-bell(aria-hidden='true')
-    hr
-    .row
-      .col-xs-10
-        | ORF 401: E-Commerce
-        #demo2.collapse
-          button.btn.btn-default(type='button', data-toggle='collapse', data-target='#available2') Show Available People
-          #available2.collapse
-            | List of available people in table form
-      .col-xs-1
-        .btn-group(data-toggle='button')
-          button.btn.btn-default(type='button', aria-label='Left Align', data-toggle='collapse', data-target='#demo2')
-            span.glyphicon.glyphicon-book(aria-hidden='true')
-      .col-xs-1
-        .btn-group(data-toggle='button')
-          button.btn.btn-default(type='button', aria-label='Left Align')
-            span.glyphicon.glyphicon-bell(aria-hidden='true')
-    hr
-    .row
-      .col-xs-10
-        | ECO 310: Microeconomics: A Mathematical Approach
-        #demo3.collapse
-          button.btn.btn-default(type='button', data-toggle='collapse', data-target='#available3') Show Available People
-          #available3.collapse
-            | List of available people in table form
-      .col-xs-1
-        .btn-group(data-toggle='button')
-          button.btn.btn-default(type='button', aria-label='Left Align', data-toggle='collapse', data-target='#demo3')
-            span.glyphicon.glyphicon-book(aria-hidden='true')
-      .col-xs-1
-        .btn-group(data-toggle='button')
-          button.btn.btn-default(type='button', aria-label='Left Align')
-            span.glyphicon.glyphicon-bell(aria-hidden='true')
-    hr
+              span.glyphicon.glyphicon-bell(aria-hidden='true', data-toggle='tooltip', title='Turn on Notifications for this class')
+      hr
+      - counter = counter + 1;
+
+    form#subscribeClassForm(method='post', action='/subscribe')
+      input(type='hidden', name='_csrf', value=_csrf)
+      .col-xs-5
+        select.combobox.form-control(name='class')
+          option(value='')
+          each temp in classList
+            - var id = temp._id;
+            option(value='#{id}') #{temp.name}
+      button.btn.btn-default(type='submit') Submit
+
