@@ -4,6 +4,8 @@ var crypto = require('crypto');
 var nodemailer = require('nodemailer');
 var passport = require('passport');
 var User = require('../models/User');
+var Class = require('../models/Class');
+var mongoose = require('mongoose');
 
 /**
  * GET /login
@@ -57,8 +59,42 @@ exports.postLogin = function(req, res, next) {
  * Log out.
  */
 exports.logout = function(req, res) {
-  req.logout();
-  res.redirect('/');
+  User.findById(req.user.id, function(err, user) {
+    if (err) {
+      console.log(err);
+      return;
+    }
+    console.log(user);
+
+    var tempFcn = function(item, callback) {
+      item.online = false;
+      Class.update(
+        { _id: item.classId },
+        { $pull: { onlineSubscribers: { userId: user._id } } },
+        function(err, raw) {
+          if (err) {
+            callback(err);
+          }
+          callback();
+        }
+      );
+    };
+
+    async.each(user.classes, tempFcn, function(err) {
+      if (err) {
+        console.log(err);
+        return;
+      }
+      user.save(function(err) {
+        if (err) {
+          console.log(err);
+          return;
+        }
+        req.logout();
+        res.redirect('/');
+      });
+    });
+  });
 };
 
 /**

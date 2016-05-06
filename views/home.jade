@@ -1,16 +1,54 @@
 extends layout
 
 block content
-  h1 Welcome to Study Buddy
+  script.
+    var userSend;
+    socket.emit('add user', '#{user._id}');
+
+    function connectToUser(userId, classId) {
+      userSend = userId;
+      socket.emit('connect with user', userId, classId);
+    }
+
+    var AppearIn = window.AppearIn;
+    var appearin = new AppearIn();
+
+    function connectToVidUser(userId) {
+      userSend = userId;
+      appearin.getRandomRoomName(function (err, roomName) {
+        socket.emit('connect with video user', userId, roomName);
+        appearin.addRoomToElementById("vidcontent", roomName);
+      });
+    }
+  h1.text-center Welcome to Study Buddy
+  #chatbox.modal.fade(role='dialog', tabindex='-1')
+    .modal-dialog
+      .panel.panel-primary
+        .panel-heading
+          span.glyphicon.glyphicon-comment
+          |  Chat
+        #reverse_scroll.panel-body
+          ul#messages.chat(style='list-style-type:none')
+        .panel-footer
+          .input-group
+            input#btn-input.form-control.input-sm(type='text', placeholder='Type your message here...', autocomplete='off')
+            span.input-group-btn
+              button#btn-chat.btn.btn-warning.btn-sm
+                | Send
+  #vidbox.modal.fade(role='dialog', tabindex='-1')
+    .modal-dialog
+      .modal-content
+        .modal-header
+          button.close(type='button', data-dismiss='modal') &times;
+          h4.modal-title Video Chat
+        .modal-body.text-center
+          iframe#vidcontent(style='width:500px;height:500px')
   hr
   p.lead
     | My Classes  
     span#gear.btn-group(data-toggle='buttons')
       button.btn.btn-default(type='button', aria-label='Left Align', data-toggle='collapse')
         span.glyphicon.glyphicon-cog(aria-hidden='true', data-toggle='tooltip', title='Edit Classes')
-    span#plus(style='display:none;')
-      button.btn.btn-default(onclick='appendText()', type='button', aria-label='Left Align')
-        span.glyphicon.glyphicon-plus(aria-hidden='true', data-toggle='tooltip', title='Add Classes')
   .container-fluid
     - var counter = 0;
     each temp in classes
@@ -18,24 +56,23 @@ block content
         .col-xs-10
           form#unsubscribeClassForm(method='post', action='/unsubscribe/#{temp._id}')
             input(type='hidden', name='_csrf', value=_csrf)
-            span.x(style='display:none;')    
-              button.btn.btn-default(type='submit')
-                span.glyphicon.glyphicon-remove(data-toggle='tooltip', title='Remove this class')
-            | #{temp.name}
+            p
+              span.x(style='display:none;')    
+                button.btn.btn-default(type='submit')
+                  span.glyphicon.glyphicon-remove(data-toggle='tooltip', title='Remove this class')
+              strong(style='font-size:18px;') #{temp.name}
           if temp.online
             div.collapse.in(id='demo#{counter}')
-              - var counter2 = 0;
-              each person in temp.onlineSubscribers
-                button.btn.btn-default(type='button', data-toggle='collapse', data-target='#available#{counter}') Show Available People
-                div.collapse.in(id='available#{counter}')
-                  table.table.table-hover
-                    thead
-                      tr
-                        th Profile Pic
-                        th Name
-                        th Email
-                        th Connect
-                    tbody
+              table.table.table-hover
+                thead
+                  tr
+                    th Profile Picture
+                    th Name
+                    th Email
+                    th Connect
+                tbody
+                  each person in temp.onlineSubscribers
+                    if (person.userId != user._id)
                       tr
                         td
                           if person.profile.picture
@@ -45,75 +82,50 @@ block content
                         td #{person.profile.name}
                         td #{person.email}
                         td
-                          button(type='button', data-toggle='modal', data-target='#myModal#{counter2}') Connect
-                          // Modal
-                          div.modal.fade(id='myModal#{counter2}', role='dialog')
-                            .modal-dialog
-                              // Modal content
-                              .modal-content
-                                .modal-header
-                                  button.close(type='button', data-dismiss='modal') ×
-                                  h4.modal-title Modal Header
-                                .modal-body
-                                  p Some text in the modal.
-                                .modal-footer
-                                  button.btn.btn-default(type='button', data-dismiss='modal') Close
+                          button(type='button', data-toggle='modal', data-target='#chatbox', onclick="connectToUser('#{person.userId}', '#{temp.classId}');")
+                            i.fa.fa-comments(data-toggle='tooltip', title='Chat')
+                          button(type='button', data-toggle='modal', data-target='#vidbox', onclick="connectToVidUser('#{person.userId}');")
+                            i.fa.fa-video-camera(data-toggle='tooltip', title='Video Chat')
           else
             div.collapse(id='demo#{counter}')
-              - var counter2 = 0;
-              each person in temp.onlineSubscribers
-                button.btn.btn-default(type='button', data-toggle='collapse', data-target='#available#{counter}') Show Available People
-                div.collapse(id='available#{counter}')
-                  table.table.table-hover
-                    thead
-                      tr
-                        th Id
-                        th Email
-                        th Connect
-                    tbody
-                      tr
-                        td #{person._id}
-                        td (need to fill this)
-                        td
-                          button(type='button', data-toggle='modal', data-target='#myModal#{counter2}') Connect
-                          // Modal
-                          div.modal.fade(id='myModal#{counter2}', role='dialog')
-                            .modal-dialog
-                              // Modal content
-                              .modal-content
-                                .modal-header
-                                  button.close(type='button', data-dismiss='modal') ×
-                                  h4.modal-title Modal Header
-                                .modal-body
-                                  p Some text in the modal.
-                                .modal-footer
-                                  button.btn.btn-default(type='button', data-dismiss='modal') Close
-        .col-xs-1
-          - if (temp.online) {
+              table.table.table-hover
+                thead
+                  tr
+                    th Profile Picture
+                    th Name
+                    th Email
+                    th Connect
+        .col-xs-2
+          if temp.online
             form#goOffline(method='post', action='/offline/#{temp._id}')
-              input(type='hidden', name='_csrf', value=_csrf)            
-              button.btn.btn-default(type='submit', aria-label='Left Align', data-toggle='collapse', data-target='#demo#{counter}')
-                span.glyphicon.glyphicon-book(aria-hidden='true', data-toggle='tooltip', title='Go Offline for this Class')
-          - } else {
+              input(type='hidden', name='_csrf', value=_csrf)
+              .btn-group(data-toggle='buttons')
+                button.btn.btn-default.wacky-btn(type='submit', aria-label='Left Align', data-toggle='collapse', data-target='#demo#{counter}')
+                  span.glyphicon.glyphicon-book(aria-hidden='true', data-toggle='tooltip', title='Go Offline for this Class')
+                label.btn.btn-default
+                  input(type='checkbox', autocomplete='off')
+                  span.glyphicon.glyphicon-bell(aria-hidden='true', data-toggle='tooltip', title='Turn on Notifications for this class')
+          else
             form#goOnline(method='post', action='/online/#{temp._id}')
               input(type='hidden', name='_csrf', value=_csrf)
-              button.btn.btn-default(type='submit', aria-label='Left Align', data-toggle='collapse', data-target='#demo#{counter}')
-                span.glyphicon.glyphicon-book(aria-hidden='true', data-toggle='tooltip', title='Go Online for this Class')
-          - }
-        .col-xs-1
-          .btn-group(data-toggle='buttons')
-            button.btn.btn-default(type='button', aria-label='Left Align')
-              span.glyphicon.glyphicon-bell(aria-hidden='true', data-toggle='tooltip', title='Turn on Notifications for this class')
+              .btn-group(data-toggle='buttons')
+                button.btn.btn-default.wacky-btn(type='submit', aria-label='Left Align', data-toggle='collapse', data-target='#demo#{counter}')
+                  span.glyphicon.glyphicon-book(aria-hidden='true', data-toggle='tooltip', title='Go Online for this Class')
+                label.btn.btn-default
+                  input(type='checkbox', autocomplete='off')
+                  span.glyphicon.glyphicon-bell(aria-hidden='true', data-toggle='tooltip', title='Turn on Notifications for this class')
       hr
       - counter = counter + 1;
 
-    form#subscribeClassForm(method='post', action='/subscribe')
-      input(type='hidden', name='_csrf', value=_csrf)
-      .col-xs-5
-        select.combobox.form-control(name='class')
-          option(value='')
-          each temp in classList
-            - var id = temp._id;
-            option(value='#{id}') #{temp.name}
-      button.btn.btn-default(type='submit') Submit
+    .row
+      form#subscribeClassForm(method='post', action='/subscribe')
+        input(type='hidden', name='_csrf', value=_csrf)
+        .col-xs-8
+          select.combobox.form-control(name='class')
+            option(value='') Add new class
+            each temp in classList
+              - var id = temp._id;
+              option(value='#{id}') #{temp.name}
+        .col-xs-2
+          button.btn.btn-default.btn-block(type='submit') Submit
 
