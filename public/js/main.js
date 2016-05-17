@@ -137,7 +137,7 @@ $(document).ready(function() {
   });
 
   $('#vidbox').on('hidden.bs.modal', function() {
-    $('vidcontent').empty();
+    $('#vidcontent').empty();
     socket.emit('video modal hidden', userSend);
     userSend = null;
   });
